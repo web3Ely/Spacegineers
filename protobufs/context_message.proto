@@ -12,6 +12,10 @@ message ResultResponse {
     int32 result = 1;
 }
 
+message NullValue {}
+
+
 service Services {
-    rpc ContextService(DamageRequest) returns (ResultResponse) {}
+    rpc ContextService(DamageRequest) returns (ResultResponse);
+    rpc StreamData(NullValue) returns (stream ResultResponse);
 }
