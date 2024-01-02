@@ -4,18 +4,20 @@ package context_message;
 
 option go_package = "./proto";
 
-message DamageRequest {
+message Damage {
     int32 damage = 1;
 }
 
-message ResultResponse {
-    int32 result = 1;
-}
+// message ResultResponse {
+//     int32 result = 1;
+// }
 
-message NullValue {}
+message Nothing {}
 
 
-service Services {
-    rpc ContextService(DamageRequest) returns (ResultResponse);
-    rpc StreamData(NullValue) returns (stream ResultResponse);
+service SpaceContext {
+    // Other player's incoming damage
+    rpc Hit(Damage) returns (Nothing) {};
+    // Room register itself in Context
+    rpc RoomRegister(Nothing) returns (stream Damage) {};
 }

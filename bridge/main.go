@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	pb "spacegineers_context/protobufs"
 
@@ -36,12 +37,16 @@ func main() {
 
 	for {
 		resp, err := stream.Recv()
-		if err != nil {
+		if err == io.EOF {
+			log.Println("It is end of file")
 			break
 		}
+		if err != nil {
+			log.Fatalf("Error: %v.StreamData(_) = _, %v", client, err)
+		}
 
-		fmt.Printf("Received integer: %d\n", resp.GetResult())
+		log.Printf("Received integer: %d\n", resp.GetResult())
 	}
 
-	fmt.Println("Stream closed.")
+	log.Println("Stream closed.")
 }

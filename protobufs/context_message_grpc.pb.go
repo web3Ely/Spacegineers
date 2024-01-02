@@ -19,41 +19,43 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Services_ContextService_FullMethodName = "/context_message.Services/ContextService"
-	Services_StreamData_FullMethodName     = "/context_message.Services/StreamData"
+	SpaceContext_Hit_FullMethodName          = "/context_message.SpaceContext/Hit"
+	SpaceContext_RoomRegister_FullMethodName = "/context_message.SpaceContext/RoomRegister"
 )
 
-// ServicesClient is the client API for Services service.
+// SpaceContextClient is the client API for SpaceContext service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type ServicesClient interface {
-	ContextService(ctx context.Context, in *DamageRequest, opts ...grpc.CallOption) (*ResultResponse, error)
-	StreamData(ctx context.Context, in *NullValue, opts ...grpc.CallOption) (Services_StreamDataClient, error)
+type SpaceContextClient interface {
+	// Other player's incoming damage
+	Hit(ctx context.Context, in *Damage, opts ...grpc.CallOption) (*Nothing, error)
+	// Room register itself in Context
+	RoomRegister(ctx context.Context, in *Nothing, opts ...grpc.CallOption) (SpaceContext_RoomRegisterClient, error)
 }
 
-type servicesClient struct {
+type spaceContextClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewServicesClient(cc grpc.ClientConnInterface) ServicesClient {
-	return &servicesClient{cc}
+func NewSpaceContextClient(cc grpc.ClientConnInterface) SpaceContextClient {
+	return &spaceContextClient{cc}
 }
 
-func (c *servicesClient) ContextService(ctx context.Context, in *DamageRequest, opts ...grpc.CallOption) (*ResultResponse, error) {
-	out := new(ResultResponse)
-	err := c.cc.Invoke(ctx, Services_ContextService_FullMethodName, in, out, opts...)
+func (c *spaceContextClient) Hit(ctx context.Context, in *Damage, opts ...grpc.CallOption) (*Nothing, error) {
+	out := new(Nothing)
+	err := c.cc.Invoke(ctx, SpaceContext_Hit_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *servicesClient) StreamData(ctx context.Context, in *NullValue, opts ...grpc.CallOption) (Services_StreamDataClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Services_ServiceDesc.Streams[0], Services_StreamData_FullMethodName, opts...)
+func (c *spaceContextClient) RoomRegister(ctx context.Context, in *Nothing, opts ...grpc.CallOption) (SpaceContext_RoomRegisterClient, error) {
+	stream, err := c.cc.NewStream(ctx, &SpaceContext_ServiceDesc.Streams[0], SpaceContext_RoomRegister_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &servicesStreamDataClient{stream}
+	x := &spaceContextRoomRegisterClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -63,110 +65,112 @@ func (c *servicesClient) StreamData(ctx context.Context, in *NullValue, opts ...
 	return x, nil
 }
 
-type Services_StreamDataClient interface {
-	Recv() (*ResultResponse, error)
+type SpaceContext_RoomRegisterClient interface {
+	Recv() (*Damage, error)
 	grpc.ClientStream
 }
 
-type servicesStreamDataClient struct {
+type spaceContextRoomRegisterClient struct {
 	grpc.ClientStream
 }
 
-func (x *servicesStreamDataClient) Recv() (*ResultResponse, error) {
-	m := new(ResultResponse)
+func (x *spaceContextRoomRegisterClient) Recv() (*Damage, error) {
+	m := new(Damage)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-// ServicesServer is the server API for Services service.
-// All implementations must embed UnimplementedServicesServer
+// SpaceContextServer is the server API for SpaceContext service.
+// All implementations must embed UnimplementedSpaceContextServer
 // for forward compatibility
-type ServicesServer interface {
-	ContextService(context.Context, *DamageRequest) (*ResultResponse, error)
-	StreamData(*NullValue, Services_StreamDataServer) error
-	mustEmbedUnimplementedServicesServer()
+type SpaceContextServer interface {
+	// Other player's incoming damage
+	Hit(context.Context, *Damage) (*Nothing, error)
+	// Room register itself in Context
+	RoomRegister(*Nothing, SpaceContext_RoomRegisterServer) error
+	mustEmbedUnimplementedSpaceContextServer()
 }
 
-// UnimplementedServicesServer must be embedded to have forward compatible implementations.
-type UnimplementedServicesServer struct {
+// UnimplementedSpaceContextServer must be embedded to have forward compatible implementations.
+type UnimplementedSpaceContextServer struct {
 }
 
-func (UnimplementedServicesServer) ContextService(context.Context, *DamageRequest) (*ResultResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ContextService not implemented")
+func (UnimplementedSpaceContextServer) Hit(context.Context, *Damage) (*Nothing, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Hit not implemented")
 }
-func (UnimplementedServicesServer) StreamData(*NullValue, Services_StreamDataServer) error {
-	return status.Errorf(codes.Unimplemented, "method StreamData not implemented")
+func (UnimplementedSpaceContextServer) RoomRegister(*Nothing, SpaceContext_RoomRegisterServer) error {
+	return status.Errorf(codes.Unimplemented, "method RoomRegister not implemented")
 }
-func (UnimplementedServicesServer) mustEmbedUnimplementedServicesServer() {}
+func (UnimplementedSpaceContextServer) mustEmbedUnimplementedSpaceContextServer() {}
 
-// UnsafeServicesServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to ServicesServer will
+// UnsafeSpaceContextServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to SpaceContextServer will
 // result in compilation errors.
-type UnsafeServicesServer interface {
-	mustEmbedUnimplementedServicesServer()
+type UnsafeSpaceContextServer interface {
+	mustEmbedUnimplementedSpaceContextServer()
 }
 
-func RegisterServicesServer(s grpc.ServiceRegistrar, srv ServicesServer) {
-	s.RegisterService(&Services_ServiceDesc, srv)
+func RegisterSpaceContextServer(s grpc.ServiceRegistrar, srv SpaceContextServer) {
+	s.RegisterService(&SpaceContext_ServiceDesc, srv)
 }
 
-func _Services_ContextService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DamageRequest)
+func _SpaceContext_Hit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Damage)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ServicesServer).ContextService(ctx, in)
+		return srv.(SpaceContextServer).Hit(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Services_ContextService_FullMethodName,
+		FullMethod: SpaceContext_Hit_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ServicesServer).ContextService(ctx, req.(*DamageRequest))
+		return srv.(SpaceContextServer).Hit(ctx, req.(*Damage))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Services_StreamData_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(NullValue)
+func _SpaceContext_RoomRegister_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(Nothing)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(ServicesServer).StreamData(m, &servicesStreamDataServer{stream})
+	return srv.(SpaceContextServer).RoomRegister(m, &spaceContextRoomRegisterServer{stream})
 }
 
-type Services_StreamDataServer interface {
-	Send(*ResultResponse) error
+type SpaceContext_RoomRegisterServer interface {
+	Send(*Damage) error
 	grpc.ServerStream
 }
 
-type servicesStreamDataServer struct {
+type spaceContextRoomRegisterServer struct {
 	grpc.ServerStream
 }
 
-func (x *servicesStreamDataServer) Send(m *ResultResponse) error {
+func (x *spaceContextRoomRegisterServer) Send(m *Damage) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-// Services_ServiceDesc is the grpc.ServiceDesc for Services service.
+// SpaceContext_ServiceDesc is the grpc.ServiceDesc for SpaceContext service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Services_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "context_message.Services",
-	HandlerType: (*ServicesServer)(nil),
+var SpaceContext_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "context_message.SpaceContext",
+	HandlerType: (*SpaceContextServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "ContextService",
-			Handler:    _Services_ContextService_Handler,
+			MethodName: "Hit",
+			Handler:    _SpaceContext_Hit_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "StreamData",
-			Handler:       _Services_StreamData_Handler,
+			StreamName:    "RoomRegister",
+			Handler:       _SpaceContext_RoomRegister_Handler,
 			ServerStreams: true,
 		},
 	},
