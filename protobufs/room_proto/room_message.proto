@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package room_message;
+
+option go_package = "./proto";
+
+message Source {
+    bool on = 1;
+}
+
+message Supply {
+    string type = 1;
+    bool on = 2;
+}
+
+message Damage {
+    int32 damage = 1;
+}
+
+message Empty {}
+
+service RoomGRPC {
+    rpc Electricity(Source) returns (Empty) {}
+    rpc Air(Source) returns (Empty) {}
+    rpc ClientRegister(stream Damage) returns (stream Supply){}
+}

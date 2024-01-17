@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package context_message;
+
+option go_package = "./proto";
+
+message Damage {
+    int32 damage = 1;
+}
+
+// message ResultResponse {
+//     int32 result = 1;
+// }
+
+message Empty {}
+
+
+service SpaceContext {
+    // Other player's incoming damage
+    rpc Hit(Damage) returns (Empty) {};
+    // Room register itself in Context
+    rpc RoomRegister(Empty) returns (stream Damage) {};
+}
