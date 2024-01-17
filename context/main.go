@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
-	pb "spacegineers_context/protobufs"
+	pb "spacegineers_context/protobufs/context_proto"
 
 	"google.golang.org/grpc"
 )
@@ -74,21 +74,22 @@ type Server struct {
 // Hit method is activated when another player fires to this ship
 // It is blocking, a respond is blocked when all workers are working, that means the receiver will not receive a respond on time
 // (Change) Might want to store incoming request so that the http communication is not blocked
-func (s *Server) Hit(ctx context.Context, req *pb.Damage) (*pb.Nothing, error) {
+func (s *Server) Hit(ctx context.Context, req *pb.Damage) (*pb.Empty, error) {
 	log.Printf("Received a damage: %v", req.Damage)
 	job := InJob{Value: req.Damage}
 	s.JobQueueManager.JobInChannel <- job
 	log.Printf("Pass")
-	return &pb.Nothing{}, nil
+	return &pb.Empty{}, nil
 }
 
-func (s *Server) RoomRegister(req *pb.Nothing, stream pb.SpaceContext_RoomRegisterServer) error {
+func (s *Server) RoomRegister(req *pb.Empty, stream pb.SpaceContext_RoomRegisterServer) error {
 	log.Printf("Received a room registration request")
 	// for i := 0; i < 3; i++ {
 	for outJob := range s.JobQueueManager.JobOutChannel {
 		log.Println("Send impact result to a room")
 		if err := stream.Send(&pb.Damage{Damage: outJob.Value}); err != nil {
-			log.Fatalf("Room register error: %v", err)
+			log.Printf("Room register error: %v \n", err)
+			return err
 		}
 	}
 	return nil
@@ -102,7 +103,7 @@ func main() {
 	//const change to enviornment variable
 	const (
 		port      = 8080
-		maxWorker = 2
+		maxWorker = 3
 	)
 
 	log.Println("Initializing the Context")
@@ -128,5 +129,5 @@ func main() {
 }
 
 // improvements:
-// 1. Make JobInChannel buffered channel so that it does not lock other players
+// 1. Make JobInChannel/JobOutChannel buffered channel so that it does not lock the traffic
 // 2. Set context deadline for a player when they call grpc functions to avoid dead lock

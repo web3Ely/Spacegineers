@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	pb "spacegineers_context/protobufs"
+	pb "spacegineers_context/protobufs/context_proto"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
