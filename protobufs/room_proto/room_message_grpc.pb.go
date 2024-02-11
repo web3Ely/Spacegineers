@@ -19,18 +19,17 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	RoomGRPC_Electricity_FullMethodName    = "/room_message.RoomGRPC/Electricity"
-	RoomGRPC_Air_FullMethodName            = "/room_message.RoomGRPC/Air"
-	RoomGRPC_ClientRegister_FullMethodName = "/room_message.RoomGRPC/ClientRegister"
+	RoomGRPC_RoomSubscribe_FullMethodName = "/room_message.RoomGRPC/RoomSubscribe"
 )
 
 // RoomGRPCClient is the client API for RoomGRPC service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RoomGRPCClient interface {
-	Electricity(ctx context.Context, in *Source, opts ...grpc.CallOption) (*Empty, error)
-	Air(ctx context.Context, in *Source, opts ...grpc.CallOption) (*Empty, error)
-	ClientRegister(ctx context.Context, opts ...grpc.CallOption) (RoomGRPC_ClientRegisterClient, error)
+	// rpc Electricity(Source) returns (Empty) {}
+	// rpc Air(Source) returns (Empty) {}
+	// rpc RoomSubscribe(Sub) returns (stream Supply){}
+	RoomSubscribe(ctx context.Context, opts ...grpc.CallOption) (RoomGRPC_RoomSubscribeClient, error)
 }
 
 type roomGRPCClient struct {
@@ -41,48 +40,30 @@ func NewRoomGRPCClient(cc grpc.ClientConnInterface) RoomGRPCClient {
 	return &roomGRPCClient{cc}
 }
 
-func (c *roomGRPCClient) Electricity(ctx context.Context, in *Source, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
-	err := c.cc.Invoke(ctx, RoomGRPC_Electricity_FullMethodName, in, out, opts...)
+func (c *roomGRPCClient) RoomSubscribe(ctx context.Context, opts ...grpc.CallOption) (RoomGRPC_RoomSubscribeClient, error) {
+	stream, err := c.cc.NewStream(ctx, &RoomGRPC_ServiceDesc.Streams[0], RoomGRPC_RoomSubscribe_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
-}
-
-func (c *roomGRPCClient) Air(ctx context.Context, in *Source, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
-	err := c.cc.Invoke(ctx, RoomGRPC_Air_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *roomGRPCClient) ClientRegister(ctx context.Context, opts ...grpc.CallOption) (RoomGRPC_ClientRegisterClient, error) {
-	stream, err := c.cc.NewStream(ctx, &RoomGRPC_ServiceDesc.Streams[0], RoomGRPC_ClientRegister_FullMethodName, opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &roomGRPCClientRegisterClient{stream}
+	x := &roomGRPCRoomSubscribeClient{stream}
 	return x, nil
 }
 
-type RoomGRPC_ClientRegisterClient interface {
-	Send(*Damage) error
+type RoomGRPC_RoomSubscribeClient interface {
+	Send(*Supply) error
 	Recv() (*Supply, error)
 	grpc.ClientStream
 }
 
-type roomGRPCClientRegisterClient struct {
+type roomGRPCRoomSubscribeClient struct {
 	grpc.ClientStream
 }
 
-func (x *roomGRPCClientRegisterClient) Send(m *Damage) error {
+func (x *roomGRPCRoomSubscribeClient) Send(m *Supply) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *roomGRPCClientRegisterClient) Recv() (*Supply, error) {
+func (x *roomGRPCRoomSubscribeClient) Recv() (*Supply, error) {
 	m := new(Supply)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -94,9 +75,10 @@ func (x *roomGRPCClientRegisterClient) Recv() (*Supply, error) {
 // All implementations must embed UnimplementedRoomGRPCServer
 // for forward compatibility
 type RoomGRPCServer interface {
-	Electricity(context.Context, *Source) (*Empty, error)
-	Air(context.Context, *Source) (*Empty, error)
-	ClientRegister(RoomGRPC_ClientRegisterServer) error
+	// rpc Electricity(Source) returns (Empty) {}
+	// rpc Air(Source) returns (Empty) {}
+	// rpc RoomSubscribe(Sub) returns (stream Supply){}
+	RoomSubscribe(RoomGRPC_RoomSubscribeServer) error
 	mustEmbedUnimplementedRoomGRPCServer()
 }
 
@@ -104,14 +86,8 @@ type RoomGRPCServer interface {
 type UnimplementedRoomGRPCServer struct {
 }
 
-func (UnimplementedRoomGRPCServer) Electricity(context.Context, *Source) (*Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Electricity not implemented")
-}
-func (UnimplementedRoomGRPCServer) Air(context.Context, *Source) (*Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Air not implemented")
-}
-func (UnimplementedRoomGRPCServer) ClientRegister(RoomGRPC_ClientRegisterServer) error {
-	return status.Errorf(codes.Unimplemented, "method ClientRegister not implemented")
+func (UnimplementedRoomGRPCServer) RoomSubscribe(RoomGRPC_RoomSubscribeServer) error {
+	return status.Errorf(codes.Unimplemented, "method RoomSubscribe not implemented")
 }
 func (UnimplementedRoomGRPCServer) mustEmbedUnimplementedRoomGRPCServer() {}
 
@@ -126,62 +102,26 @@ func RegisterRoomGRPCServer(s grpc.ServiceRegistrar, srv RoomGRPCServer) {
 	s.RegisterService(&RoomGRPC_ServiceDesc, srv)
 }
 
-func _RoomGRPC_Electricity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Source)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RoomGRPCServer).Electricity(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RoomGRPC_Electricity_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RoomGRPCServer).Electricity(ctx, req.(*Source))
-	}
-	return interceptor(ctx, in, info, handler)
+func _RoomGRPC_RoomSubscribe_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(RoomGRPCServer).RoomSubscribe(&roomGRPCRoomSubscribeServer{stream})
 }
 
-func _RoomGRPC_Air_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Source)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RoomGRPCServer).Air(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RoomGRPC_Air_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RoomGRPCServer).Air(ctx, req.(*Source))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RoomGRPC_ClientRegister_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(RoomGRPCServer).ClientRegister(&roomGRPCClientRegisterServer{stream})
-}
-
-type RoomGRPC_ClientRegisterServer interface {
+type RoomGRPC_RoomSubscribeServer interface {
 	Send(*Supply) error
-	Recv() (*Damage, error)
+	Recv() (*Supply, error)
 	grpc.ServerStream
 }
 
-type roomGRPCClientRegisterServer struct {
+type roomGRPCRoomSubscribeServer struct {
 	grpc.ServerStream
 }
 
-func (x *roomGRPCClientRegisterServer) Send(m *Supply) error {
+func (x *roomGRPCRoomSubscribeServer) Send(m *Supply) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *roomGRPCClientRegisterServer) Recv() (*Damage, error) {
-	m := new(Damage)
+func (x *roomGRPCRoomSubscribeServer) Recv() (*Supply, error) {
+	m := new(Supply)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -194,20 +134,11 @@ func (x *roomGRPCClientRegisterServer) Recv() (*Damage, error) {
 var RoomGRPC_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "room_message.RoomGRPC",
 	HandlerType: (*RoomGRPCServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Electricity",
-			Handler:    _RoomGRPC_Electricity_Handler,
-		},
-		{
-			MethodName: "Air",
-			Handler:    _RoomGRPC_Air_Handler,
-		},
-	},
+	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "ClientRegister",
-			Handler:       _RoomGRPC_ClientRegister_Handler,
+			StreamName:    "RoomSubscribe",
+			Handler:       _RoomGRPC_RoomSubscribe_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},

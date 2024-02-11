@@ -4,23 +4,27 @@ package room_message;
 
 option go_package = "./proto";
 
-message Source {
-    bool on = 1;
-}
+// message RoomSupply {
+//     string type = 1;
+//     bool on = 2;
+//     int32 areaCode = 3;
+// }
 
 message Supply {
-    string type = 1;
-    bool on = 2;
+    int32 senderId = 1;
+    string resourceType = 2;
+    bool resouceAvailability = 3;
 }
 
-message Damage {
-    int32 damage = 1;
-}
+// message Empty {}
 
-message Empty {}
+// message Sub {
+//     int32 areaCode = 1;
+// }
 
 service RoomGRPC {
-    rpc Electricity(Source) returns (Empty) {}
-    rpc Air(Source) returns (Empty) {}
-    rpc ClientRegister(stream Damage) returns (stream Supply){}
+    // rpc Electricity(Source) returns (Empty) {}
+    // rpc Air(Source) returns (Empty) {}
+    // rpc RoomSubscribe(Sub) returns (stream Supply){}
+    rpc RoomSubscribe(stream Supply) returns (stream Supply){}
 }
