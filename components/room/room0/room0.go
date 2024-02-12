@@ -6,7 +6,7 @@ import (
 	"io"
 	"log"
 
-	pb "spacegineers_context/protobufs/room_proto"
+	pb "spacegineers_context/protobufs/controller_proto"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -17,19 +17,21 @@ import (
 // It receives damage from context api and send it to RoomToServer
 func main() {
 	controller := "localhost:53000"
-	name := "Room1"
+	name := "Room0"
 	ctxIdentifier := "compcode"
-	componentNum := "2"
+	componentNum := "R0"
 
 	connection, err := grpc.Dial(controller, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("%s failed to connect to the Room Controller, %v", name, err)
 	}
-	client := pb.NewRoomGRPCClient(connection)
+	defer connection.Close()
+
+	client := pb.NewControllerGRPCClient(connection)
 	fmt.Printf("%s successfully connected to the Room Controller \n", name)
 
 	ctx := metadata.NewOutgoingContext(context.Background(), metadata.Pairs(ctxIdentifier, componentNum))
-	stream, err := client.RoomSubscribe(ctx)
+	stream, err := client.Subscribe(ctx)
 	if err != nil {
 		log.Fatalf("%s failed to subscribe to the Room Controller, %v", name, err)
 	}
@@ -45,5 +47,6 @@ func main() {
 			log.Fatalf("%s failed to communicate with the Room Controller, %v", name, err)
 		}
 		fmt.Printf("%s received %v from the Room Controller \n", name, rec)
+
 	}
 }

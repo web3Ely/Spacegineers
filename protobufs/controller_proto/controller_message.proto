@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package controller_protobuf;
+
+option go_package = "./proto";
+
+// message RoomSupply {
+//     string type = 1;
+//     bool on = 2;
+//     int32 areaCode = 3;
+// }
+
+message Supply {
+    string senderId = 1;
+    string resourceType = 2;
+    bool resouceAvailability = 3;
+}
+
+message Empty {}
+
+message Init {
+    string senderId = 1;
+}
+
+service ControllerGRPC {
+    rpc Initialize(Init) returns (Empty) {}
+    rpc Subscribe(stream Supply) returns (stream Supply){}
+}

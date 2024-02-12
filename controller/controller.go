@@ -6,15 +6,15 @@ streamming function calls for a Room.
 package main
 
 import (
-	helper "spacegineers_context/controller/utils"
+	server "spacegineers_context/controller/utils"
 	shipSetting "spacegineers_context/settings"
 )
 
 // Controller Server entry point
 func main() {
-	controller := helper.NewController()
-	controller.Address = "localhost:53000"
-	controller.ComponentIdentifier = "compcode"
-	controller.ConnectionTable = shipSetting.GerShipSettings()
+	serverAddress := "localhost:53000"
+	compIdentifier := "compcode"
+	connections := shipSetting.GerShipSettings()
+	controller := server.NewController(serverAddress, compIdentifier, connections)
 	controller.StartGRPCServer()
 }
