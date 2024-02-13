@@ -1,11 +1,10 @@
 /*
-This file contains information about a component type
+This file contains information about a Room
 
-A component type represents a component client in grpc paradigm which can then
-be initialized by other actural compartment of a ship object like room and appliance.
+A Room is a grpc client
 */
 
-package utils
+package main
 
 import (
 	"context"
@@ -19,23 +18,25 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-type Component struct {
-	controllerAddress string
-	componentId       string
-	componentName     string
-	ctxIdentifier     string
+type Room struct {
+	controllerAddress     string
+	componentId           string
+	componentName         string
+	ctxIdentifier         string
+	resourcesAvailability map[string]bool
 }
 
-func NewComponent(addr string, identifier string, name string, ctxId string) *Component {
-	return &Component{
-		controllerAddress: addr,
-		componentId:       identifier,
-		componentName:     name,
-		ctxIdentifier:     ctxId,
+func NewRoom(addr string, ctxId string, identifier string, name string) *Room {
+	return &Room{
+		controllerAddress:     addr,
+		componentId:           identifier,
+		componentName:         name,
+		ctxIdentifier:         ctxId,
+		resourcesAvailability: make(map[string]bool),
 	}
 }
 
-func (c *Component) StartServer() {
+func (c *Room) StartServer() {
 	connection, err := grpc.Dial(c.controllerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	defer closeConnection(connection, c.componentName)
 
@@ -61,10 +62,15 @@ func (c *Component) StartServer() {
 		if err != nil {
 			log.Fatalf("%s : failed to receive message from the Room Controller, %v", c.componentName, err)
 		}
-		fmt.Printf("%s : received %v from the Room Controller \n", c.componentName, recSupply)
+		fmt.Printf("%s : receives {%v} from the Room Controller \n", c.componentName, recSupply)
 
-		if err := stream.Send(recSupply); err != nil {
-			log.Fatalf("%s : failed to send message to the Room Controller, %v", c.componentName, err)
+		// if receive availability is the same as the stored availability
+		if !c.resourcesAvailability[recSupply.ResourceType] {
+			c.resourcesAvailability[recSupply.ResourceType] = true
+			if err := stream.Send(recSupply); err != nil {
+				log.Fatalf("%s : failed to send message to the Room Controller, %v", c.componentName, err)
+			}
+			fmt.Printf("%s : send {%v} to the Room Controller \n", c.componentName, recSupply)
 		}
 	}
 }

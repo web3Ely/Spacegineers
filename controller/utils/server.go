@@ -1,11 +1,10 @@
-package controllerhelper
+package controllerUtil
 
 import (
 	"fmt"
 	"io"
 	"log"
 	"net"
-	"slices"
 	pb "spacegineers_context/protobufs/controller_proto"
 	"sync"
 
@@ -46,53 +45,57 @@ func (c *Controller) Subscribe(stream pb.ControllerGRPC_SubscribeServer) error {
 	}
 	fmt.Printf("Room Controller : Component%s is registered \n", componentId)
 
+	component := NewComponentManager(c.connectionTables[componentId])
+
 	myErr := make(chan error)
 	msg := make(chan *pb.Supply)
-	connectionTable := c.connectionTables[componentId]
-	receptionTable := []string{}
 	c.tunnels.Store(componentId, msg)
 
-	go func() {
-		for {
-			recSupply, err := stream.Recv()
-			if err == io.EOF {
-				// trigger reason unknown
-				fmt.Printf("Room Controller ending connections with Component%s due to receinve EOF \n", componentId)
-				myErr <- nil
-				return
-			}
-			if err != nil {
-				fmt.Printf("Room Controller ending connections with Component%s due to error, %v \n", componentId, err)
-				myErr <- err
-				return
-			}
-			fmt.Printf("Room Controller : receives %v form Component%s \n", recSupply, componentId)
-
-			if slices.Contains(receptionTable, recSupply.SenderId) {
-				receptionTable = append(receptionTable, recSupply.SenderId)
-			}
-
-			for _, neighbourNum := range connectionTable {
-				if !slices.Contains(receptionTable, neighbourNum) {
-					channel, ok := c.tunnels.Load(neighbourNum)
-					if ok {
-						channel.(chan *pb.Supply) <- recSupply
-					}
-				}
-			}
-		}
-	}()
+	go c.StratReceive(stream, component, componentId, myErr)
 
 	for {
 		select {
-		case <-myErr:
-			return <-myErr
+		case err := <-myErr:
+			return err
 		case recSupply := <-msg:
+			// If the Component hasn't receive a supply from this sender
+			component.AddReceptId(recSupply.SenderId, recSupply.ResourceType)
+			// Send this sender's message to the Component
 			if err := stream.Send(recSupply); err != nil {
-				fmt.Printf("Room Controller could not reach Component%s, %v \n", componentId, err)
+				fmt.Printf("Room Controller could not reach Component %s, %v \n", componentId, err)
 				myErr <- err
 			}
-			fmt.Printf("Room Controller : Send %v to Component%s \n", recSupply, componentId)
+			fmt.Printf("Room Controller : Send {%v} to Component %s \n", recSupply, componentId)
+
+		}
+	}
+}
+
+func (c *Controller) StratReceive(stream pb.ControllerGRPC_SubscribeServer, component *ComponentManager, componentId string, myErr chan<- error) {
+	for {
+		recSupply, err := stream.Recv()
+		if err == io.EOF {
+			// trigger reason unknown
+			fmt.Printf("Room Controller ending connections with Component %s due to receinve EOF \n", componentId)
+			myErr <- nil
+			return
+		}
+		if err != nil {
+			fmt.Printf("Room Controller ending connections with Component %s due to error, %v \n", componentId, err)
+			myErr <- err
+			return
+		}
+		fmt.Printf("Room Controller : Component %s receives {%+v} \n", componentId, recSupply)
+
+		recSupply.SenderId = componentId
+
+		for _, neighbourId := range component.neighbourList {
+			if component.NotInReceptList(neighbourId, recSupply.ResourceType) {
+				channel, ok := c.tunnels.Load(neighbourId)
+				if ok {
+					channel.(chan *pb.Supply) <- recSupply
+				}
+			}
 		}
 	}
 }
